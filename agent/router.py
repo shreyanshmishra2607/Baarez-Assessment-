@@ -1,51 +1,53 @@
+import re
 from tools.calculator import tool_calculate
 from tools.memory import tool_save_memory, tool_get_memory
+
+# Tool registry
+TOOLS = {
+    "calculator": tool_calculate,
+    "memory_save": tool_save_memory,
+    "memory_read": tool_get_memory
+}
 
 
 def agent_router(prompt: str) -> dict:
     text = prompt.lower().strip()
 
-    # ---------------- MEMORY READ ----------------
-    if "what is my" in text or "recall" in text:
-        key = (
-            text.replace("what is my", "")
-                .replace("recall", "")
-                .replace("?", "")
-                .strip()
-        )
-                    
-        result = tool_get_memory(key)
+    # ---------- MEMORY SAVE ----------
+    save_match = re.search(r"(remember|save) (.+) is (.+)", text)
+
+    if save_match:
+        key = save_match.group(2).replace("my ", "").strip()
+        value = save_match.group(3).strip()
+
+        response = TOOLS["memory_save"](key, value)
+
+        return {
+            "chosen_tool": "memory_save",
+            "tool_input": f"{key} -> {value}",
+            "confidence": 0.95,
+            "response": response
+        }
+
+    # ---------- MEMORY READ ----------
+    read_match = re.search(r"(what is my|recall) (.+)", text)
+
+    if read_match:
+        key = read_match.group(2).replace("my ", "").replace("?", "").strip()
+
+
+        response = TOOLS["memory_read"](key)
 
         return {
             "chosen_tool": "memory_read",
             "tool_input": key,
-            "response": result
+            "confidence": 0.90,
+            "response": response
         }
 
-    # ---------------- MEMORY SAVE ----------------
-    if "remember" in text or "save" in text:
-        cleaned = (
-            text.replace("remember", "")
-                .replace("save", "")
-                .strip()
-        )
-
-        if " is " in cleaned:
-            key, value = cleaned.split(" is ", 1)
-
-            key = key.replace("my ", "").strip()
-            value = value.strip()
-
-            result = tool_save_memory(key, value)
-
-            return {
-                "chosen_tool": "memory_save",
-                "tool_input": f"{key} -> {value}",
-                "response": result
-            }
-
-    # ---------------- CALCULATOR ----------------
+    # ---------- CALCULATOR ----------
     if "what is" in text or "calculate" in text:
+
         expression = (
             text.replace("what is", "")
                 .replace("calculate", "")
@@ -58,15 +60,17 @@ def agent_router(prompt: str) -> dict:
                 .strip()
         )
 
-        result = tool_calculate(expression)
+        response = TOOLS["calculator"](expression)
 
         return {
             "chosen_tool": "calculator",
             "tool_input": expression,
-            "response": result
+            "confidence": 0.88,
+            "response": response
         }
 
-    # ---------------- FALLBACK ----------------
+    # ---------- FALLBACK ----------
     return {
-        "error": "I do not have a tool for that."
+        "error": "I do not have a tool for that.",
+        "confidence": 0.0
     }
