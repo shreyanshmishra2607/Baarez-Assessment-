@@ -40,24 +40,26 @@ Tools required:
 
 ## 📁 Project Structure
 
-app/
-├── main.py              # FastAPI entry point
+APP/
+├
 ├── agent/
-│    ├── router.py      # Agent brain (intent routing & parsing)
-│    └── schemas.py     # Pydantic models
-├── tools/
-│    ├── calculator.py # Calculator tool logic
-│    └── memory.py     # Memory CRUD logic
+│   ├── router.py
+│   └── schemas.py
 ├── db/
-│    └── database.py   # Database setup
-
-tests/
-└── test_agent.py      # Automated tests
-
-memory.db              # SQLite database
-memory.sql             # SQL schema reference
-requirements.txt
-README.md
+│   └── database.py
+├── tests/
+│   └── test_agent.py
+├── tools/
+│   ├── calculator.py
+│   └── memory.py
+├── venv/
+├── __init__.py
+├── .gitignore
+├── main.py
+├── memory.db
+├── memory.sql
+├── README.md
+└── requirements.txt
 
 ---
 
@@ -229,7 +231,8 @@ uvicorn app.main:app --reload
 
 ## 🧪 How to Run Tests
 
-pytest -v
+python -m pytest -v
+
 
 ---
 
