@@ -1,13 +1,42 @@
 import re
-from tools.calculator import tool_calculate
-from tools.memory import tool_save_memory, tool_get_memory
+from difflib import get_close_matches
 
-# Tool registry
-TOOLS = {
-    "calculator": tool_calculate,
-    "memory_save": tool_save_memory,
-    "memory_read": tool_get_memory
+from tools.calculator import tool_calculate
+from tools.memory import tool_save_memory, tool_get_memory, Memory, SessionLocal
+
+
+# Simple synonym mapping
+SYNONYMS = {
+    "hometown": ["place", "city", "where i live"],
+    "cat's name": ["my cat", "pet name"],
+    "favorite color": ["fav color", "colour"]
 }
+
+
+def normalize_key(key: str) -> str:
+    key = key.lower().strip()
+
+    for main_key, variations in SYNONYMS.items():
+        if key == main_key:
+            return main_key
+
+        for word in variations:
+            if word in key:
+                return main_key
+
+    return key
+
+
+def fuzzy_match(key: str, stored_keys: list):
+    match = get_close_matches(key, stored_keys, n=1, cutoff=0.6)
+    return match[0] if match else None
+
+
+def get_all_keys():
+    db = SessionLocal()
+    keys = [row.key for row in db.query(Memory).all()]
+    db.close()
+    return keys
 
 
 def agent_router(prompt: str) -> dict:
@@ -20,12 +49,13 @@ def agent_router(prompt: str) -> dict:
         key = save_match.group(2).replace("my ", "").strip()
         value = save_match.group(3).strip()
 
-        response = TOOLS["memory_save"](key, value)
+        key = normalize_key(key)
+
+        response = tool_save_memory(key, value)
 
         return {
             "chosen_tool": "memory_save",
             "tool_input": f"{key} -> {value}",
-            "confidence": 0.95,
             "response": response
         }
 
@@ -33,15 +63,23 @@ def agent_router(prompt: str) -> dict:
     read_match = re.search(r"(what is my|recall) (.+)", text)
 
     if read_match:
-        key = read_match.group(2).replace("my ", "").replace("?", "").strip()
+        raw_key = read_match.group(2).replace("?", "").replace("my ", "").strip()
+        key = normalize_key(raw_key)
 
+        stored_keys = get_all_keys()
 
-        response = TOOLS["memory_read"](key)
+        # Try exact match first
+        if key not in stored_keys and stored_keys:
+            fuzzy_key = fuzzy_match(key, stored_keys)
+            if fuzzy_key:
+                key = fuzzy_key
+
+        response = tool_get_memory(key)
+
 
         return {
             "chosen_tool": "memory_read",
             "tool_input": key,
-            "confidence": 0.90,
             "response": response
         }
 
@@ -60,17 +98,15 @@ def agent_router(prompt: str) -> dict:
                 .strip()
         )
 
-        response = TOOLS["calculator"](expression)
+        response = tool_calculate(expression)
 
         return {
             "chosen_tool": "calculator",
             "tool_input": expression,
-            "confidence": 0.88,
             "response": response
         }
 
     # ---------- FALLBACK ----------
     return {
-        "error": "I do not have a tool for that.",
-        "confidence": 0.0
+        "error": "I do not have a tool for that."
     }

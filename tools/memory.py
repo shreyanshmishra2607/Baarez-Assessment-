@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import Session
 from db.database import Base, engine, SessionLocal
 
-# Memory table
+
 class Memory(Base):
     __tablename__ = "memory"
 
@@ -11,20 +11,20 @@ class Memory(Base):
     value = Column(String)
 
 
-# Create table
+# Create table automatically
 Base.metadata.create_all(bind=engine)
 
 
 def tool_save_memory(key: str, value: str) -> dict:
     db: Session = SessionLocal()
 
-    existing = db.query(Memory).filter(Memory.key == key).first()
+    record = db.query(Memory).filter(Memory.key == key).first()
 
-    if existing:
-        existing.value = value
+    if record:
+        record.value = value
     else:
-        new_memory = Memory(key=key, value=value)
-        db.add(new_memory)
+        record = Memory(key=key, value=value)
+        db.add(record)
 
     db.commit()
     db.close()
@@ -35,11 +35,11 @@ def tool_save_memory(key: str, value: str) -> dict:
 def tool_get_memory(key: str) -> dict:
     db: Session = SessionLocal()
 
-    memory = db.query(Memory).filter(Memory.key == key).first()
+    record = db.query(Memory).filter(Memory.key == key).first()
 
     db.close()
 
-    if memory:
-        return {"key": memory.key, "value": memory.value}
-    else:
-        return {"error": "Memory not found"}
+    if record:
+        return {"key": record.key, "value": record.value}
+
+    return {"error": "Memory not found"}

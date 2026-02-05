@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from agent.schemas import AgentRequest, AgentResponse
+
+from agent.schemas import AgentRequest
 from agent.router import agent_router
 
 app = FastAPI()
@@ -18,6 +19,5 @@ def query_agent(request: AgentRequest):
         "original_prompt": prompt,
         "chosen_tool": result["chosen_tool"],
         "tool_input": result["tool_input"],
-        "confidence": result["confidence"],
         "response": result["response"]
     }
