@@ -1,12 +1,11 @@
 # python -m pytest -v
 
-
 from fastapi.testclient import TestClient
 from main import app
 
 client = TestClient(app)
 
-# ---------------- CALCULATOR STRESS ---------------- #
+# CALCULATOR STRESS TESTS
 
 def test_calculator_basic():
     r = client.post("/agent/query", json={"prompt": "What is 10 plus 5"})
@@ -38,7 +37,7 @@ def test_calculator_invalid_expression():
     assert "error" in r.json()["response"]
 
 
-# ---------------- MEMORY STRESS ---------------- #
+# MEMORY STRESS TESTS
 
 def test_memory_multiple_saves():
     client.post("/agent/query", json={"prompt": "Remember my hometown is Lucknow"})
@@ -83,7 +82,7 @@ def test_memory_unknown_key():
     assert "error" in r.json()["response"]
 
 
-# ---------------- ROUTER EDGE CASES ---------------- #
+# ROUTER EDGE CASES TESTS 
 
 def test_case_insensitivity():
     client.post("/agent/query", json={"prompt": "Remember My Hometown Is Jaipur"})
@@ -104,7 +103,7 @@ def test_unknown_prompt():
     assert "error" in r.json()
 
 
-# ---------------- LOAD STYLE TEST ---------------- #
+# LOAD STYLE TEST 
 
 def test_many_requests_loop():
     for i in range(20):
